@@ -2,10 +2,65 @@ module.exports = function(BN) {
   return function (chai, utils) {
     const addFlag = function(flag) { return function() {utils.flag(this, flag, true);} }
 
+    chai.Assertion.addProperty('bignumber', function() {
+      utils.flag(this, 'bignumber', true);
+    });
+
+    var override = function(fn) {
+      return function (_super) {
+        return function(value) {
+          if (utils.flag(this, 'bignumber')) {
+            fn.apply(this, [value, this._obj]);
+          } else {
+            _super.apply(this, arguments);
+          }
+        };
+      };
+    };
+
+    // BigNumber.equals
+    var equals = override(function(expected, actual) {
+      this.assert(
+        expected.eq(actual),
+        'expected #{act} to equal #{exp}',
+        'expected #{act} to be different from #{exp}',
+        expected.toString(),
+        actual.toString()
+      );
+    });
+    chai.Assertion.overwriteMethod('equal', equals);
+    chai.Assertion.overwriteMethod('equals', equals);
+
+    var greaterThan = override(function(expected, actual) {
+      this.assert(
+        actual.gt(expected),
+        'expected #{act} to be greater than #{exp}',
+        'expected #{act} to be less than or equal to #{exp}',
+        expected.toString(),
+        actual.toString()
+      );
+    });
+    chai.Assertion.overwriteMethod('above', greaterThan);
+    chai.Assertion.overwriteMethod('gt', greaterThan);
+    chai.Assertion.overwriteMethod('greaterThan', greaterThan);
+
+    var lessThan = override(function(expected, actual) {
+      this.assert(
+        actual.lt(expected),
+        'expected #{act} to be less than #{exp}',
+        'expected #{act} to be greater than or equal to #{exp}',
+        expected.toString(),
+        actual.toString()
+      );
+    });
+    chai.Assertion.overwriteMethod('below', lessThan);
+    chai.Assertion.overwriteMethod('lt', lessThan);
+    chai.Assertion.overwriteMethod('lessThan', lessThan);
+
     chai.Assertion.addProperty('eq', addFlag('eq'));
-    chai.Assertion.addProperty('lt', addFlag('lt'));
+    // chai.Assertion.addProperty('lt', addFlag('lt'));
     chai.Assertion.addProperty('lte', addFlag('lte'));
-    chai.Assertion.addProperty('gt', addFlag('gt'));
+    // chai.Assertion.addProperty('gt', addFlag('gt'));
     chai.Assertion.addProperty('gte', addFlag('gte'));
 
     const negativeProperty = function(actual) {
